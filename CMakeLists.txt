@@ -95,6 +95,7 @@ endfunction()
 
 include_directories("${PROTO_GEN_DIR}")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/server")
 
 # ---- 四个 proto 库 ----
 add_proto_library(grpc_proto_lib  "${PROTO_DIR}/login.proto")
@@ -102,18 +103,18 @@ add_proto_library(db_proto_lib    "${PROTO_DIR}/db.proto")
 add_proto_library(auth_proto_lib  "${PROTO_DIR}/auth.proto")
 
 # ---- Login 服务 ----
-add_executable(grpc_server server.cpp)
+add_executable(grpc_server server/server.cpp)
 target_link_libraries(grpc_server grpc_proto_lib db_proto_lib auth_proto_lib
     absl::flags absl::flags_parse absl::log absl::check
     ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
 
-add_executable(grpc_client client.cpp)
+add_executable(grpc_client server/client.cpp)
 target_link_libraries(grpc_client grpc_proto_lib
     absl::flags absl::flags_parse absl::log absl::check
     ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
 
 # ---- Auth 服务（链接 hiredis + openssl）----
-add_executable(auth_server auth_server.cpp)
+add_executable(auth_server server/auth_server.cpp)
 target_include_directories(auth_server PRIVATE ${HIREDIS_INCLUDE_DIR})
 target_link_libraries(auth_server auth_proto_lib
     absl::flags absl::flags_parse absl::log absl::check
@@ -126,7 +127,7 @@ target_link_libraries(auth_server pthread)
 find_library(MYSQL_LIB mysqlclient
     PATHS /usr/lib/x86_64-linux-gnu /usr/lib/aarch64-linux-gnu /usr/lib)
 
-add_executable(db_server db_server.cpp db_proxy.cpp)
+add_executable(db_server server/db_server.cpp server/db_proxy.cpp)
 target_link_libraries(db_server db_proto_lib
     absl::flags absl::flags_parse absl::log absl::check
     ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF}
@@ -172,7 +173,7 @@ if(NOT EXISTS "/usr/include/hiredis/hiredis.h")
     endif()
 endif()
 
-add_executable(msg_server msg_server.cpp)
+add_executable(msg_server server/msg_server.cpp)
 target_include_directories(msg_server PRIVATE
     ${HIREDIS_INCLUDE_DIR}
     ${Boost_INCLUDE_DIRS})
