@@ -1,0 +1,88 @@
+--- a/gateway/main.go
++++ b/gateway/main.go
+@@ -80,15 +80,15 @@ func main() {
+ 	msgWSAddr = os.Getenv("MSG_WS_ADDR")
+ 	if msgWSAddr == "" {
+ 		msgWSAddr = "ws://localhost:50055/ws"
++	}
+ 
+ 	dbAddr := os.Getenv("DB_GRPC_ADDR")
+ 	if dbAddr == "" {
+ 		dbAddr = "localhost:50052"
+ 	}
+-	}
+ 
+-	conn, err := grpc.Dial(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
++	conn, err := grpc.Dial(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+ 	if err != nil {
+ 		log.Fatalf("failed to dial gRPC server: %v", err)
+ 	}
+@@ -104,12 +104,11 @@ func main() {
+ 		log.Fatalf("failed to dial auth server: %v", err)
+ 	}
+ 
+-	dbConn, err := grpc.Dial(dbAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
++	dbConn, err := grpc.Dial(dbAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+ 	if err != nil {
+ 		log.Fatalf("failed to dial db server: %v", err)
+ 	}
+ 	defer dbConn.Close()
+-	dbClient = pb.NewDatabaseServiceClient(dbConn)
+ 
+ 	dbClient = pb.NewDatabaseServiceClient(dbConn)
+ 	defer authConn.Close()
+@@ -121,6 +120,7 @@ func main() {
+ 	mux.HandleFunc("/api/user/info", corsMiddleware(handleUserInfo))
+ 	mux.HandleFunc("/api/validate", corsMiddleware(handleValidate))
++	mux.HandleFunc("/api/history", corsMiddleware(handleHistory))
+ 
+ 	server := &http.Server{
+ 		Addr:         addr,
+@@ -332,6 +332,47 @@ func handleValidate(w http.ResponseWriter, r *http.Request) {
+ 	})
+ }
+ 
++func handleHistory(w http.ResponseWriter, r *http.Request) {
++	if r.Method != "POST" {
++		writeJSON(w, http.StatusMethodNotAllowed, historyResponse{Success: false, Error: "method not allowed"})
++		return
++	}
++	token := extractToken(r)
++	if token == "" {
++		writeJSON(w, http.StatusUnauthorized, historyResponse{Success: false, Error: "no token"})
++		return
++	}
++
++	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
++	defer cancel()
++
++	vreq := &pb.ValidateTokenRequest{Token: token}
++	vrep, err := authClient.ValidateToken(ctx, vreq)
++	if err != nil || !vrep.Valid {
++		writeJSON(w, http.StatusUnauthorized, historyResponse{Success: false, Error: "invalid token"})
++		return
++	}
++
++	var req historyRequest
++	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
++		writeJSON(w, http.StatusBadRequest, historyResponse{Success: false, Error: "invalid request body"})
++		return
++	}
++
++	limit := req.Limit
++	if limit <= 0 {
++		limit = 50
++	}
++
++	dbrep, err := dbClient.GetMessagesBetween(ctx, &pb.GetMessagesBetweenRequest{
++		UserId:   vrep.UserId,
++		FriendId: req.FriendID,
++		Limit:    limit,
++		Offset:   req.Offset,
++	})
++	writeJSON(w, http.StatusOK, dbrep)
++}
++
+ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
+ 	w.Header().Set("Content-Type", "application/json")
+ 	w.WriteHeader(status)
