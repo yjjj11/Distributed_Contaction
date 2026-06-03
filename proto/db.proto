@@ -1,0 +1,204 @@
+syntax = "proto3";
+package db;
+option go_package = "grpc-gateway/pb";
+
+// ========== 用户表 ==========
+message User {
+  int64 id = 1;
+  string username = 2;
+  string password = 3;
+  string qq_email = 4;
+  string nickname = 5;
+  string phone = 6;
+  string avatar_url = 7;
+  int32 status = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+message BatchCreateRequest {
+  repeated User users = 1;
+}
+message BatchCreateResponse {
+  int32 affected_count = 1;
+  string message = 2;
+}
+
+message BatchGetRequest {
+  repeated int64 ids = 1;
+}
+message BatchGetResponse {
+  repeated User users = 1;
+  string message = 2;
+}
+
+message BatchUpdateRequest {
+  repeated User users = 1;
+}
+message BatchUpdateResponse {
+  int32 affected_count = 1;
+  string message = 2;
+}
+
+message BatchDeleteRequest {
+  repeated int64 ids = 1;
+}
+message BatchDeleteResponse {
+  int32 affected_count = 1;
+  string message = 2;
+}
+
+message QueryRequest {
+  string field = 1;
+  string value = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+message QueryResponse {
+  repeated User users = 1;
+  int32 total = 2;
+  string message = 3;
+}
+
+// ========== 好友请求表 ==========
+message FriendRequestRecord {
+  int64 id = 1;
+  int64 from_user_id = 2;
+  int64 to_user_id = 3;
+  int32 status = 4;            // 0=pending 1=accepted 2=rejected
+  string from_username = 5;    // 冗余，方便展示
+  string to_username = 6;      // 冗余
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message CreateFriendRequestReq {
+  int64 from_user_id = 1;
+  int64 to_user_id = 2;
+  string from_username = 3;
+  string to_username = 4;
+}
+message CreateFriendRequestRsp {
+  int64 id = 1;
+  string message = 2;
+}
+
+message GetFriendRequestsByUserReq {
+  int64 user_id = 1;
+  int32 status = 2;             // -1=全部, 0=pending, 1=accepted, 2=rejected
+}
+message GetFriendRequestsByUserRsp {
+  repeated FriendRequestRecord requests = 1;
+  string message = 2;
+}
+
+message UpdateFriendRequestStatusReq {
+  int64 id = 1;
+  int32 status = 2;
+}
+message UpdateFriendRequestStatusRsp {
+  bool success = 1;
+  string message = 2;
+}
+
+// ========== 好友关系表 ==========
+message FriendshipRecord {
+  int64 id = 1;
+  int64 user_id = 2;
+  int64 friend_id = 3;
+  string friend_username = 4;  // 冗余
+  string created_at = 5;
+}
+
+message CreateFriendshipReq {
+  int64 user_id = 1;
+  int64 friend_id = 2;
+  string friend_username = 3;
+}
+message CreateFriendshipRsp {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetFriendshipsReq {
+  int64 user_id = 1;
+}
+message GetFriendshipsRsp {
+  repeated FriendshipRecord friendships = 1;
+  string message = 2;
+}
+
+message DeleteFriendshipReq {
+  int64 user_id = 1;
+  int64 friend_id = 2;
+}
+message DeleteFriendshipRsp {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetUserIdByUsernameReq {
+  string username = 1;
+}
+message GetUserIdByUsernameRsp {
+  int64 user_id = 1;
+  bool found = 2;
+  string message = 3;
+}
+
+// ========== 消息记录表 ==========
+message MessageRecord {
+  int64 id = 1;
+  int64 from_user_id = 2;
+  int64 to_user_id = 3;
+  string content = 4;
+  int32 msg_type = 5;          // 0=text
+  int32 status = 6;            // 0=sent 1=delivered 2=read
+  string created_at = 7;
+}
+
+message BatchCreateMessagesReq {
+  repeated MessageRecord messages = 1;
+}
+message BatchCreateMessagesRsp {
+  int32 affected_count = 1;
+  string message = 2;
+}
+
+message GetMessagesBetweenReq {
+  int64 user_id_a = 1;
+  int64 user_id_b = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message GetMessagesBetweenRsp {
+  repeated MessageRecord messages = 1;
+  string message = 2;
+}
+
+// ========== 数据库服务 ==========
+service DatabaseService {
+  // 用户 CRUD
+  rpc BatchCreate(BatchCreateRequest) returns (BatchCreateResponse);
+  rpc BatchGet(BatchGetRequest) returns (BatchGetResponse);
+  rpc BatchUpdate(BatchUpdateRequest) returns (BatchUpdateResponse);
+  rpc BatchDelete(BatchDeleteRequest) returns (BatchDeleteResponse);
+  rpc Query(QueryRequest) returns (QueryResponse);
+
+  // 好友请求
+  rpc CreateFriendRequest(CreateFriendRequestReq) returns (CreateFriendRequestRsp);
+  rpc GetFriendRequestsByUser(GetFriendRequestsByUserReq) returns (GetFriendRequestsByUserRsp);
+  rpc UpdateFriendRequestStatus(UpdateFriendRequestStatusReq) returns (UpdateFriendRequestStatusRsp);
+
+  // 好友关系
+  rpc CreateFriendship(CreateFriendshipReq) returns (CreateFriendshipRsp);
+  rpc GetFriendships(GetFriendshipsReq) returns (GetFriendshipsRsp);
+  rpc DeleteFriendship(DeleteFriendshipReq) returns (DeleteFriendshipRsp);
+
+  // 用户查询（根据 username 查 id）
+  rpc GetUserIdByUsername(GetUserIdByUsernameReq) returns (GetUserIdByUsernameRsp);
+
+  // 消息记录
+  rpc BatchCreateMessages(BatchCreateMessagesReq) returns (BatchCreateMessagesRsp);
+  rpc GetMessagesBetween(GetMessagesBetweenReq) returns (GetMessagesBetweenRsp);
+}

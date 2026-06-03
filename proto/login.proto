@@ -1,0 +1,52 @@
+syntax = "proto3";
+package login;
+option go_package = "grpc-gateway/pb";
+
+service LoginService {
+  rpc Login(stream LoginRequest) returns (stream LoginReply);
+  rpc Register(RegisterRequest) returns (RegisterReply);
+  rpc ChangePassword(ChangePasswordRequest) returns (ChangePasswordReply);
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountReply);
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginReply {
+  bool success = 1;
+  string message = 2;
+  string token = 3;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message RegisterReply {
+  bool success = 1;
+  string message = 2;
+}
+
+message ChangePasswordRequest {
+  string username = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message ChangePasswordReply {
+  bool success = 1;
+  string message = 2;
+}
+
+message DeleteAccountRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message DeleteAccountReply {
+  bool success = 1;
+  string message = 2;
+}

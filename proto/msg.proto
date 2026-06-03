@@ -1,0 +1,169 @@
+syntax = "proto3";
+package msg;
+
+option go_package = "grpc-gateway/pb";
+
+// ========== 消息类型 ==========
+
+message SendMsgRequest {
+  int64 from_user_id = 1;
+  int64 to_user_id = 2;
+  string content = 3;
+  int32 msg_type = 4;   // 0=text
+}
+message SendMsgReply {
+  bool success = 1;
+  string message = 2;
+  int64 msg_id = 3;     // Redis 中的临时消息 ID
+  int64 created_at = 4; // Unix timestamp
+}
+
+message PullOfflineRequest {
+  int64 user_id = 1;
+}
+message OfflineMessage {
+  int64 from_user_id = 1;
+  string from_username = 2;
+  string content = 3;
+  int32 msg_type = 4;
+  int64 created_at = 5;
+  string msg_id = 6;    // Redis 中的 key，用于 ack
+}
+message PullOfflineReply {
+  repeated OfflineMessage messages = 1;
+  string message = 2;
+}
+
+message AckOfflineRequest {
+  int64 user_id = 1;
+  repeated string msg_ids = 2;
+}
+message AckOfflineReply {
+  bool success = 1;
+}
+
+// ========== 好友请求 ==========
+
+message FriendRequestReq {
+  int64 from_user_id = 1;
+  string from_username = 2;
+  string to_username = 3;
+}
+message FriendRequestReply {
+  bool success = 1;
+  string message = 2;
+  int64 request_id = 3;
+}
+
+message HandleFriendReq {
+  int64 user_id = 1;
+  int64 request_id = 2;
+  bool accept = 3;
+}
+message HandleFriendReply {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetPendingReqsReq {
+  int64 user_id = 1;
+}
+message PendingFriendRequest {
+  int64 request_id = 1;
+  int64 from_user_id = 2;
+  string from_username = 3;
+  int32 status = 4;       // 0=pending
+  string created_at = 5;
+}
+message GetPendingReqsReply {
+  repeated PendingFriendRequest requests = 1;
+  string message = 2;
+}
+
+// ========== 好友列表 ==========
+
+message GetFriendListReq {
+  int64 user_id = 1;
+}
+message FriendInfo {
+  int64 friend_id = 1;
+  string friend_username = 2;
+  bool online = 3;
+  string created_at = 4;
+}
+message GetFriendListReply {
+  repeated FriendInfo friends = 1;
+  string message = 2;
+}
+
+// ========== 历史消息 ==========
+
+message GetHistoryReq {
+  int64 user_id = 1;
+  int64 with_user_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+message HistoryMessage {
+  int64 msg_id = 1;
+  int64 from_user_id = 2;
+  string content = 3;
+  int32 msg_type = 4;
+  string created_at = 5;
+}
+message GetHistoryReply {
+  repeated HistoryMessage messages = 1;
+  string message = 2;
+}
+
+// ========== 在线状态 ==========
+
+message OnlineReq {
+  int64 user_id = 1;
+}
+message OnlineReply {
+  bool success = 1;
+}
+
+// ========== 根据 token 获取用户信息 ==========
+
+message GetUserByTokenReq {
+  string token = 1;
+}
+message GetUserByTokenReply {
+  bool valid = 1;
+  int64 user_id = 2;
+  string username = 3;
+}
+
+// ========== 服务定义 ==========
+
+service MsgService {
+  // 注册/心跳在线
+  rpc RegisterOnline(OnlineReq) returns (OnlineReply);
+  // 注销在线
+  rpc UnregisterOnline(OnlineReq) returns (OnlineReply);
+
+  // 发送消息（在线直接推送，离线存 Redis）
+  rpc SendMessage(SendMsgRequest) returns (SendMsgReply);
+  // 拉取离线消息
+  rpc PullOfflineMessages(PullOfflineRequest) returns (PullOfflineReply);
+  // 确认离线消息已接收
+  rpc AckOfflineMessages(AckOfflineRequest) returns (AckOfflineReply);
+
+  // 发送好友请求
+  rpc SendFriendRequest(FriendRequestReq) returns (FriendRequestReply);
+  // 处理好友请求（接受/拒绝）
+  rpc HandleFriendRequest(HandleFriendReq) returns (HandleFriendReply);
+  // 获取待处理的好友请求
+  rpc GetPendingFriendRequests(GetPendingReqsReq) returns (GetPendingReqsReply);
+
+  // 获取好友列表（含在线状态）
+  rpc GetFriendList(GetFriendListReq) returns (GetFriendListReply);
+
+  // 获取聊天历史
+  rpc GetHistoryMessages(GetHistoryReq) returns (GetHistoryReply);
+
+  // 根据 token 获取用户信息（供 WebSocket 鉴权使用）
+  rpc GetUserByToken(GetUserByTokenReq) returns (GetUserByTokenReply);
+}

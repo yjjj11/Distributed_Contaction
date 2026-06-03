@@ -1,0 +1,42 @@
+syntax = "proto3";
+package auth;
+option go_package = "grpc-gateway/pb";
+
+service AuthService {
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+}
+
+message CreateTokenRequest {
+  int64 user_id = 1;
+  string username = 2;
+}
+
+message CreateTokenResponse {
+  bool success = 1;
+  string token = 2;
+  string message = 3;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  int64 user_id = 2;
+  string username = 3;
+  string message = 4;
+  int64 exp = 5;
+}
+
+message RevokeTokenRequest {
+  int64 user_id = 1;
+  int64 ttl_seconds = 2;
+}
+
+message RevokeTokenResponse {
+  bool success = 1;
+  string message = 2;
+}
