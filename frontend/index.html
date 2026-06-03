@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即时通讯</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <canvas id="particles-canvas"></canvas>
+
+    <div class="fluid-bg"></div>
+
+    <!-- ========== 导航栏（登录后显示） ========== -->
+    <nav id="navbar" class="navbar hidden">
+        <div class="nav-inner">
+            <div class="nav-brand">即时通讯</div>
+            <div class="nav-links">
+                <a href="#/home" class="nav-link" data-route="home">聊天</a>
+                <a href="#/profile" class="nav-link" data-route="profile">个人</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== 登录/注册视图 ========== -->
+    <div id="login-view" class="view">
+        <div class="container">
+            <div class="card-wrapper">
+                <div class="card" id="auth-card">
+                    <!-- 登录面 -->
+                    <div class="card-face card-front">
+                        <div class="card-header">
+                            <h2>欢迎回来</h2>
+                            <p>登录你的账号</p>
+                        </div>
+                        <form id="login-form" autocomplete="off">
+                            <div class="input-group">
+                                <label for="login-username">用户名</label>
+                                <input type="text" id="login-username" placeholder="请输入用户名" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="login-password">密码</label>
+                                <input type="password" id="login-password" placeholder="请输入密码" required>
+                            </div>
+                            <button type="submit" class="btn btn-login">
+                                <span>登 录</span>
+                                <div class="btn-shimmer"></div>
+                            </button>
+                        </form>
+                        <div id="login-error" class="error-msg"></div>
+                        <p class="toggle-text">
+                            还没有账号？<a href="#" id="show-register">立即注册</a>
+                        </p>
+                    </div>
+
+                    <!-- 注册面 -->
+                    <div class="card-face card-back">
+                        <div class="card-header">
+                            <h2>创建账号</h2>
+                            <p>加入我们</p>
+                        </div>
+                        <form id="register-form" autocomplete="off">
+                            <div class="input-group">
+                                <label for="reg-username">用户名</label>
+                                <input type="text" id="reg-username" placeholder="请输入用户名" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="reg-password">密码</label>
+                                <input type="password" id="reg-password" placeholder="请输入密码" required>
+                            </div>
+                            <button type="submit" class="btn btn-register">
+                                <span>注 册</span>
+                                <div class="btn-shimmer"></div>
+                            </button>
+                        </form>
+                        <div id="register-error" class="error-msg"></div>
+                        <p class="toggle-text">
+                            已有账号？<a href="#" id="show-login">返回登录</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 聊天视图（登录后显示） ========== -->
+    <div id="home-view" class="view hidden">
+        <div class="chat-app">
+            <div class="chat-sidebar">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar" id="sidebar-avatar">U</div>
+                    <span class="sidebar-username" id="sidebar-username">-</span>
+                </div>
+                <div class="sidebar-search">
+                    <input type="text" id="friend-search" placeholder="搜索好友...">
+                </div>
+                <div class="sidebar-friends" id="friend-list"></div>
+                <div class="sidebar-actions">
+                    <button id="add-friend-btn">
+                        <span class="add-icon">+</span> 添加好友
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-main">
+                <div class="chat-placeholder" id="chat-placeholder">
+                    <div class="placeholder-icon">💬</div>
+                    <p>选择一个好友开始聊天</p>
+                </div>
+                <div class="chat-panel hidden" id="chat-panel">
+                    <div class="chat-header">
+                        <span id="chat-friend-name">好友</span>
+                    </div>
+                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="输入消息..." autocomplete="off">
+                        <button id="chat-send-btn">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 个人中心视图（登录后显示） ========== -->
+    <div id="profile-view" class="view hidden">
+        <div class="profile-content">
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    <span class="avatar-text" id="profile-avatar-text">U</span>
+                </div>
+                <h2 class="profile-username" id="profile-username">-</h2>
+                <p class="profile-userid">ID: <span id="profile-userid">-</span></p>
+                <button id="logout-btn" class="btn btn-logout">
+                    <span>退出登录</span>
+                    <div class="btn-shimmer"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 添加好友弹窗 ========== -->
+    <div id="add-friend-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>添加好友</h3>
+            <div class="input-group">
+                <label for="add-friend-input">好友用户名</label>
+                <input type="text" id="add-friend-input" placeholder="请输入对方用户名" autocomplete="off">
+            </div>
+            <div id="add-friend-error" class="error-msg"></div>
+            <div class="modal-actions">
+                <button id="add-friend-cancel" class="btn btn-secondary">取消</button>
+                <button id="add-friend-confirm" class="btn btn-primary">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/particles.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
